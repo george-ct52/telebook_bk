@@ -7,8 +7,8 @@ CORS(app)
 
 # MySQL configurations
 app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'  # replace with your MySQL username
-app.config['MYSQL_PASSWORD'] = 'tiger'  # replace with your MySQL password
+app.config['MYSQL_USER'] = 'root'  
+app.config['MYSQL_PASSWORD'] = 'tiger'  
 app.config['MYSQL_DB'] = 'contactsDB'
 
 mysql = MySQL(app)
@@ -123,6 +123,34 @@ def remove_favorite(contact_id):
     cur.close()
 
     return jsonify({'msg': 'Contact removed from favorites'})
+
+# Search contacts by first name, last name, phone, or email
+@app.route('/contacts/search', methods=['GET','POST'])
+def search_contact():
+    search_query = request.args.get('search')
+    search_term = f"%{search_query}%"
+
+    cur = mysql.connection.cursor()
+    query = """
+        SELECT * FROM contacts 
+        WHERE firstName LIKE %s OR lastName LIKE %s OR phone LIKE %s OR email LIKE %s
+    """
+    cur.execute(query, (search_term, search_term, search_term, search_term))
+    contacts = cur.fetchall()
+    cur.close()
+
+    contacts_list = []
+    for contact in contacts:
+        contact_data = {
+            'id': contact[0],
+            'firstName': contact[1],
+            'lastName': contact[2],
+            'phone': contact[3],
+            'email': contact[4],
+        }
+        contacts_list.append(contact_data)
+
+    return jsonify(contacts_list)
 
 if __name__ == '__main__':
     app.run(debug=True)
